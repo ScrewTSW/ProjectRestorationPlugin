@@ -7,5 +7,6 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="lib" path="src/lib/Minecraft_Mod.jar" sourcepath="/home/tdancs/Workspace/ProjectRestoration/hMod_130/src"/>
+	<classpathentry kind="lib" path="src/lib/hModLogger.jar" sourcepath="src/lib/hModLogger.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
