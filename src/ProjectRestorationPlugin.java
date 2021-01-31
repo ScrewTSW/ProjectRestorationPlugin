@@ -1,28 +1,26 @@
 import java.lang.StringBuilder;
-import java.io.File;
-import java.io.FileWriter;
-import java.math.BigInteger;
-import java.security.MessageDigest;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
 
 public class ProjectRestorationPlugin extends Plugin {
 
-    private static String NAME = "ProjectRestorationPlugin";
-    private static int MAJOR = 1;
-    private static int MINOR = 0;
-    private static int REVISION = 0;
+    public static final String NAME = "ProjectRestorationPlugin";
+    public static final int MAJOR = 1;
+    public static final int MINOR = 0;
+    public static final int REVISION = 0;
 
     private PropertiesFile properties;
     private ProjectRestorationPluginListener listener = null;
+    private static int sanctuaryChunkCount = 1;
+    private static Location spawnLocation = null;
 
     public void initialize() {
-        log("Registering listeners");
+        Logger.getInstance(Logger.LogLevel.parse(properties.getString("log-level","INFO")), this);
+        System.out.println("[" + getName() + "] " + ProjectRestorationPlugin.getVersion() + " log-level:"+Logger.LOG_LEVEL.getValue() + " parsed from:"+properties.getString("log-level","INFO"));
+        Logger.info("Registering listeners");
 
-        listener = new ProjectRestorationPluginListener(this);
+        listener = new ProjectRestorationPluginListener();
+        sanctuaryChunkCount = properties.getInt("sanctuary-exclusion-chunk-count", 1);
+        spawnLocation = etc.getServer().getSpawnLocation();
+        Logger.info("Spawn location: x:"+spawnLocation.x+" y:"+spawnLocation.y+" z:"+spawnLocation.z);
 
         register(PluginLoader.Hook.BLOCK_DESTROYED, PluginListener.Priority.CRITICAL);
         register(PluginLoader.Hook.BLOCK_BROKEN, PluginListener.Priority.CRITICAL);
@@ -47,7 +45,11 @@ public class ProjectRestorationPlugin extends Plugin {
      * @priority the priority to use
      */
     private void register(PluginLoader.Hook hook, PluginListener.Priority priority) {
-        etc.getLoader().addListener(hook, listener, this, priority);
+        try {
+            etc.getLoader().addListener(hook, listener, this, priority);
+        } catch (NoSuchFieldError e) {
+            Logger.error("Could not register for "+hook.toString()+" event.");
+        }
     }
 
     /**
@@ -64,7 +66,7 @@ public class ProjectRestorationPlugin extends Plugin {
      */
     @Override
     public void disable() {
-        log(ProjectRestorationPlugin.NAME + " - Server-side map protection disabled!");
+        Logger.warn(ProjectRestorationPlugin.NAME + " - Server-side map protection disabled!");
     }
 
     /**
@@ -73,22 +75,26 @@ public class ProjectRestorationPlugin extends Plugin {
     @Override
     public void enable() {
         setName(ProjectRestorationPlugin.NAME);
-        log(ProjectRestorationPlugin.NAME + " - Server-side map protection enabled.");
+        Logger.warn(ProjectRestorationPlugin.NAME + " - Server-side map protection enabled.");
 
         properties = new PropertiesFile("server.properties");
     }
 
-    /**
-     * Log a message
-     *
-     * @param str the string to log
-     */
-    public void log(String str) {
-        System.out.println("[" + getName() + "] " + getVersion() + " " + str);
-    }
-    
-    public String getVersion() {
+    public static String getVersion() {
         return new StringBuilder("[v").append(MAJOR).append(".").append(MINOR).append(".").append(REVISION).append("]").toString();
     }
 
+    public static Location getSpawnLocation() {
+        return spawnLocation;
+    }
+
+    public static boolean isInBounds(double x, double y, double z) {
+        int distanceFromSpawn = Math.max(Math.abs((int)x - (int)Math.floor(spawnLocation.x)), Math.abs((int)z - (int)Math.floor(spawnLocation.z)));
+        Logger.trace("Event location: x:"+x+" z:"+z+ " spawn: x:"+spawnLocation.x+" z:"+spawnLocation.z+" sanctuarySize:"+sanctuaryChunkCount*16+" distance:"+distanceFromSpawn);
+        return distanceFromSpawn <= sanctuaryChunkCount*16;
+    }
+
+    public static boolean isInBounds(Location location) {
+        return isInBounds(location.x, location.y, location.z);
+    }
 }
