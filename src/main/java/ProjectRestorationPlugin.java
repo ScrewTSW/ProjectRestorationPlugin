@@ -13,15 +13,13 @@ public class ProjectRestorationPlugin extends Plugin {
     private static Location spawnLocation = null;
 
     public void initialize() {
-        Logger.getInstance(Logger.LogLevel.parse(properties.getString("log-level","INFO")), this);
-        System.out.println("[" + getName() + "] " + ProjectRestorationPlugin.getVersion() + " log-level:"+Logger.LOG_LEVEL.getValue() + " parsed from:"+properties.getString("log-level","INFO"));
-        Logger.info("Registering listeners");
-
+        Logger.info("Initializing listener");
         listener = new ProjectRestorationPluginListener();
         sanctuaryChunkCount = properties.getInt("sanctuary-exclusion-chunk-count", 1);
         spawnLocation = etc.getServer().getSpawnLocation();
         Logger.info("Spawn location: x:"+spawnLocation.x+" y:"+spawnLocation.y+" z:"+spawnLocation.z);
 
+        Logger.info("Registering events");
         register(PluginLoader.Hook.BLOCK_DESTROYED, PluginListener.Priority.CRITICAL);
         register(PluginLoader.Hook.BLOCK_BROKEN, PluginListener.Priority.CRITICAL);
         register(PluginLoader.Hook.BLOCK_PLACE, PluginListener.Priority.CRITICAL);
@@ -75,9 +73,10 @@ public class ProjectRestorationPlugin extends Plugin {
     @Override
     public void enable() {
         setName(ProjectRestorationPlugin.NAME);
-        Logger.warn(ProjectRestorationPlugin.NAME + " - Server-side map protection enabled.");
-
         properties = new PropertiesFile("server.properties");
+        Logger.init(Logger.LogLevel.parse(properties.getString("log-level","INFO")), this);
+        System.out.println("[" + getName() + "] " + ProjectRestorationPlugin.getVersion() + " log-level:"+Logger.getLogLevel().getValue() + " parsed from:"+properties.getString("log-level","INFO"));
+        Logger.warn("Server-side map protection enabled.");
     }
 
     public static String getVersion() {

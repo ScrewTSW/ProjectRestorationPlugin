@@ -1,0 +1,64 @@
+plugins {
+    id 'java'
+}
+
+group 'eu.thescrewcollab'
+version '1.0.0'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compileOnly fileTree(dir: 'src/main/resources/lib', includes: ['*.jar'])
+    compileOnly fileTree(dir: 'src/main/lib', includes: ['*.jar'])
+    runtimeOnly fileTree(dir: 'src/main/resources/lib', includes: ['hModLogger.jar'])
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+compileJava {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+jar {
+    manifest {
+        attributes (
+                'Class-Path': 'lib/hModLogger.jar ProjectRestorationPlugin.class ProjectRestorationPluginListener.class'
+        )
+    }
+    archiveFileName = 'ProjectRestorationPlugin.jar'
+}
+
+task jarWithDeps(type: Jar) {
+    manifest {
+        attributes (
+                'Class-Path': 'Logger.class Logger$LogLevel.class ProjectRestorationPlugin.class ProjectRestorationPluginListener.class'
+        )
+    }
+    from {
+        sourceSets.main.collect {
+            it.getAllJava().collect {
+                System.out.println("source:"+it.getPath());
+                return it
+            }
+        }
+    }
+    from {
+        configurations.runtimeClasspath.collect {
+            System.out.println("runtimeClasspath:"+it.getPath());
+            return it.isDirectory() ? it : zipTree(it).collect {
+                System.out.println("runtimeClasspath:"+it.getPath());
+                return it.getName().contains('MF') ? null : it
+            }
+        }
+    }
+    with jar
+    processResources.exclude('lib')
+    archiveFileName = 'ProjectRestorationPlugin.jar'
+}
