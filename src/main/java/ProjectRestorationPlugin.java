@@ -10,12 +10,14 @@ public class ProjectRestorationPlugin extends Plugin {
     private PropertiesFile properties;
     private ProjectRestorationPluginListener listener = null;
     private static int sanctuaryChunkCount = 1;
+    private static int worldBorderChunkCount = 2;
     private static Location spawnLocation = null;
 
     public void initialize() {
         Logger.info("Initializing listener");
         listener = new ProjectRestorationPluginListener();
         sanctuaryChunkCount = properties.getInt("sanctuary-exclusion-chunk-count", 1);
+        worldBorderChunkCount = properties.getInt("sanctuary-world-border-chunk-count", 2);
         spawnLocation = etc.getServer().getSpawnLocation();
         Logger.info("Spawn location: x:"+spawnLocation.x+" y:"+spawnLocation.y+" z:"+spawnLocation.z);
 
@@ -87,13 +89,54 @@ public class ProjectRestorationPlugin extends Plugin {
         return spawnLocation;
     }
 
-    public static boolean isInBounds(double x, double y, double z) {
-        int distanceFromSpawn = Math.max(Math.abs((int)x - (int)Math.floor(spawnLocation.x)), Math.abs((int)z - (int)Math.floor(spawnLocation.z)));
-        Logger.trace("Event location: x:"+x+" z:"+z+ " spawn: x:"+spawnLocation.x+" z:"+spawnLocation.z+" sanctuarySize:"+sanctuaryChunkCount*16+" distance:"+distanceFromSpawn);
-        return distanceFromSpawn <= sanctuaryChunkCount*16;
+    public static int getSanctuaryChunkCount() {
+        return sanctuaryChunkCount;
     }
 
-    public static boolean isInBounds(Location location) {
-        return isInBounds(location.x, location.y, location.z);
+    public static int getWorldBorderChunkCount() {
+        return worldBorderChunkCount;
+    }
+
+    public static boolean isInBounds(double x, double y, double z, int chunkCount) {
+        int distanceFromSpawn = Math.max(Math.abs((int)x - (int)Math.floor(spawnLocation.x)), Math.abs((int)z - (int)Math.floor(spawnLocation.z)));
+        Logger.trace("Event location: x:"+x+" z:"+z+ " spawn: x:"+spawnLocation.x+" z:"+spawnLocation.z+" sanctuarySize:"+chunkCount*16+" distance:"+distanceFromSpawn);
+        return distanceFromSpawn <= chunkCount*16;
+    }
+
+    public static boolean isInBounds(Location location, int chunkCount) {
+        return isInBounds(location.x, location.y, location.z, chunkCount);
+    }
+
+    public static Location getNearestLocationInBounds(Location location, int chunkCount) {
+        Location inBoundsLocation = new Location(location.x, 0d, location.z, location.rotX, location.rotY);
+        double minX = Math.floor(getSpawnLocation().x) - chunkCount*16;
+        double maxX = Math.floor(getSpawnLocation().x) + chunkCount*16;
+        double minZ = Math.floor(getSpawnLocation().z) - chunkCount*16;
+        double maxZ = Math.floor(getSpawnLocation().z) + chunkCount*16;
+        if (location.x > maxX) {
+            Logger.debug("X:"+inBoundsLocation.x+" is larger than maximal X:"+maxX);
+            inBoundsLocation.x = maxX+.5;
+        }
+        if (location.x < minX) {
+            Logger.debug("X:"+inBoundsLocation.x+" is smaller than minimal X:"+minX);
+            inBoundsLocation.x = minX+.5;
+        }
+        if (location.z > maxZ) {
+            Logger.debug("Z:"+inBoundsLocation.z+" is larger than maximal Z:"+maxZ);
+            inBoundsLocation.z = maxZ+.5;
+        }
+        if (location.z < minZ) {
+            Logger.debug("Z:"+inBoundsLocation.z+" is smaller than minimal Z:"+minZ);
+            inBoundsLocation.z = minZ+.5;
+        }
+        etc.getServer().loadChunk((int)inBoundsLocation.x, (int)inBoundsLocation.z);
+        int teleportY = etc.getServer().getHighestBlockY((int)inBoundsLocation.x, (int)inBoundsLocation.z);
+        Block highestBlock = etc.getServer().getBlockAt((int)inBoundsLocation.x, teleportY, (int)inBoundsLocation.z);
+        while (highestBlock.getType() == 0 && teleportY > 0) {
+            teleportY-=1;
+            highestBlock = etc.getServer().getBlockAt((int)inBoundsLocation.x, teleportY, (int)inBoundsLocation.z);
+        }
+        inBoundsLocation.y = teleportY+1;
+        return inBoundsLocation;
     }
 }
