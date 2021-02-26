@@ -108,28 +108,6 @@ public class ProjectRestorationPluginListener extends PluginListener {
 	    }
     }
 
-	@Override
-	public boolean onComplexBlockChange(Player player, ComplexBlock block) {
-	    Logger.debug("Player "+player.toString()+" interacted with complex block "+block.toString()+".");
-	    boolean inBounds = ProjectRestorationPlugin.isInBounds(block.getX(), block.getY(), block.getZ(), ProjectRestorationPlugin.getSanctuaryChunkCount());
-        if (inBounds) {
-            Logger.warn("Player "+player.toString()+" tried to interact with complex block at x:"+block.getX()+" y:"+block.getY()+" z:"+block.getZ());
-            player.sendMessage("You cannot interact with blocks inside Sanctuary chunks.");
-        }
-        return inBounds;
-    }
-
-	@Override
-	public boolean onSendComplexBlock(Player player, ComplexBlock block) {
-	    //TODO: Check if inside zone
-	    try {
-	        Logger.debug("Player "+player.toString()+" received complex block "+block.toString()+" data.");
-	    } catch (MissingFormatArgumentException e) {
-	        Logger.debug("Player "+player.toString()+" received complex block which failed to format to text.");
-	    }
-        return false;
-    }
-
 	/*==============================*
 	 * Player movement interactions *
 	 *==============================*/
